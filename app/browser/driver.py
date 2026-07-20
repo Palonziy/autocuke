@@ -1,0 +1,81 @@
+import logging
+from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+from app.config import settings
+
+logger = logging.getLogger("CucumberStudioImporter")
+
+class BrowserManager:
+    def __init__(self, headless: bool = False, timeout_ms: int = settings.DEFAULT_TIMEOUT_MS):
+        self.headless = headless
+        self.timeout_ms = timeout_ms
+        self._playwright = None
+        self._browser: Browser | None = None
+        self._context: BrowserContext | None = None
+
+    async def start(self) -> Page:
+        """Starts Playwright, launches Chromium, and returns a new page."""
+        logger.info(f"Starting browser (headless={self.headless})...")
+        self._playwright = await async_playwright().start()
+        
+        # Launch Chromium
+        try:
+            self._browser = await self._playwright.chromium.launch(
+                headless=self.headless,
+                args=["--disable-blink-features=AutomationControlled", "--start-maximized"]
+            )
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "executable doesn't exist" in err_msg or "playwright install" in err_msg or "not installed" in err_msg:
+                logger.info("Chromium browser binary not found. Installing Chromium automatically (this might take a minute)...")
+                import sys
+                import subprocess
+                try:
+                    # Run the playwright installation command
+                    subprocess.run(
+                        [sys.executable, "-m", "playwright", "install", "chromium"],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    logger.info("Chromium browser binary installed successfully. Retrying browser launch...")
+                    self._browser = await self._playwright.chromium.launch(
+                        headless=self.headless,
+                        args=["--disable-blink-features=AutomationControlled", "--start-maximized"]
+                    )
+                except Exception as install_err:
+                    logger.error(f"Failed to automatically install Chromium: {install_err}")
+                    raise install_err
+            else:
+                raise e
+        
+        # Create Context
+        self._context = await self._browser.new_context(
+            no_viewport=True,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        
+        # Set default timeouts
+        self._context.set_default_timeout(self.timeout_ms)
+        self._context.set_default_navigation_timeout(self.timeout_ms)
+        
+        page = await self._context.new_page()
+        logger.info("Browser session started successfully.")
+        return page
+
+    async def close(self):
+        """Closes browser session and stops Playwright."""
+        logger.info("Closing browser session...")
+        try:
+            if self._context:
+                await self._context.close()
+            if self._browser:
+                await self._browser.close()
+            if self._playwright:
+                await self._playwright.stop()
+        except Exception as e:
+            logger.warning(f"Error during browser cleanup: {e}")
+        finally:
+            self._context = None
+            self._browser = None
+            self._playwright = None
+            logger.info("Browser session closed.")

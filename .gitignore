@@ -1,0 +1,23 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# PyInstaller / Build outputs
+build/
+dist/
+*.spec
+*.zip
+
+# Local Environment & Credentials
+.env
+
+# Logs and progress caching
+logs/
+progress/
+__pycache__/
+*.pyc
+
+# Local system files
+.DS_Store
+Thumbs.db
