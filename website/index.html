@@ -723,10 +723,84 @@
             .nav-links {
                 display: none;
             }
+        /* Modal Style */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 8, 13, 0.6);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 36px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+        .dark-theme .modal-card {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+        .modal-card h3 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+        .modal-card p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .btn-modal-close {
+            background: var(--primary);
+            color: #ffffff;
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .dark-theme .btn-modal-close {
+            color: #07080d;
+        }
+        .btn-modal-close:hover {
+            background-color: var(--primary-hover);
         }
     </style>
 </head>
 <body>
+
+    <!-- Beautiful Coming Soon Modal -->
+    <div id="coming-soon-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 id="modal-title">Platform Build Coming Soon!</h3>
+            <p id="modal-body">We are packing the native standalone build for this OS. You can still run AutoCuke on macOS/Linux using Python.</p>
+            <button id="modal-close-btn" class="btn-modal-close">Got it</button>
+        </div>
+    </div>
 
     <!-- Ambient Glowing Effects -->
     <div class="ambient-glow-1"></div>
@@ -974,6 +1048,41 @@
                 metaText.textContent = "Supported on Ubuntu, Fedora, Debian, size ~72MB";
                 document.getElementById("card-linux").classList.add("highlighted");
             }
+            // Beautiful Popup trigger for macOS / Linux (empty hrefs)
+            const modal = document.getElementById("coming-soon-modal");
+            const modalTitle = document.getElementById("modal-title");
+            const modalBody = document.getElementById("modal-body");
+            const modalClose = document.getElementById("modal-close-btn");
+            
+            document.querySelectorAll(".btn-os-dl, #main-download-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const href = btn.getAttribute("href");
+                    if (href === "#" || !href) {
+                        e.preventDefault();
+                        // Find platform name
+                        let platformName = "This Platform";
+                        if (btn.id === "main-download-btn") {
+                            platformName = detectedOS === "mac" ? "macOS" : "Linux";
+                        } else {
+                            const card = btn.closest(".os-card");
+                            if (card) {
+                                platformName = card.querySelector(".os-name").textContent;
+                            }
+                        }
+                        
+                        modalTitle.textContent = `${platformName} Build Coming Soon!`;
+                        modalBody.innerHTML = `The standalone native build for <strong>${platformName}</strong> is currently packaging.<br><br>In the meantime, you can easily run AutoCuke on macOS/Linux using Python by running:<br><code style="background: rgba(25,135,84,0.08); padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px; font-family: monospace;">python app/main.py</code>`;
+                        modal.classList.add("active");
+                    }
+                });
+            });
+            
+            modalClose.addEventListener("click", () => {
+                modal.classList.remove("active");
+            });
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) modal.classList.remove("active");
+            });
         });
     </script>
 </body>
