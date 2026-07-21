@@ -289,6 +289,11 @@ class MainWindow(QMainWindow):
         self.btn_clear_queue = QPushButton("Clear Queue")
         self.btn_clear_queue.clicked.connect(self.clear_queue)
         browse_layout.addWidget(self.btn_clear_queue)
+
+        self.btn_info = QPushButton("ℹ️ Format Tips")
+        self.btn_info.setObjectName("btn_info")
+        self.btn_info.clicked.connect(self.show_format_help)
+        browse_layout.addWidget(self.btn_info)
         
         queue_vbox.addLayout(browse_layout)
 
@@ -423,6 +428,37 @@ class MainWindow(QMainWindow):
         logger.info("Files queue cleared.")
         self.status_bar.showMessage("Queue cleared.")
 
+    def show_format_help(self):
+        """Displays a clean, styled dialog explaining the TXT file format guidelines."""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Scenario File Format Guidelines")
+        msg_box.setTextFormat(Qt.TextFormat.RichText)
+        
+        help_html = """
+        <h3>Scenario File Syntax Guide</h3>
+        <p>Your plain-text scenario <code>.txt</code> files should follow this format:</p>
+        <pre style='background-color: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px; font-family: Courier, monospace;'>
+# Comments start with # or //
+Folder: User Authentication
+Subfolder: Sign In Flow
+
+Scenario: Successful sign in
+Action: Open login page and enter credentials
+Result: Dashboard page is loaded
+        </pre>
+        <ul>
+            <li><b>Folder / Subfolder:</b> Defines target paths in CucumberStudio.</li>
+            <li><b>Scenario:</b> Marks the test case title.</li>
+            <li><b>Action:</b> Step actions (supports multi-line text).</li>
+            <li><b>Result:</b> Expected results (supports multi-line text).</li>
+            <li><b>Comments:</b> Lines starting with <code>#</code> or <code>//</code> are skipped.</li>
+        </ul>
+        """
+        msg_box.setText(help_html)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+
     def test_connection(self):
         """Triggers worker in connection test / projects load mode."""
         email = self.email_input.text().strip()
@@ -499,6 +535,24 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Validation Error", "Please add at least one scenario TXT file to the queue.")
             return
 
+        # Prompt for Import Mode (Default vs Raw Version)
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Choose Import Mode")
+        msg_box.setText("Please select how scenarios should be imported:")
+        default_btn = msg_box.addButton("Default (Step-by-Step)", QMessageBox.ButtonRole.YesRole)
+        raw_btn = msg_box.addButton("Raw Version (Bulk)", QMessageBox.ButtonRole.NoRole)
+        cancel_btn = msg_box.addButton(QMessageBox.StandardButton.Cancel)
+        
+        msg_box.setDefaultButton(default_btn)
+        msg_box.exec()
+        
+        if msg_box.clickedButton() == default_btn:
+            import_mode = "default"
+        elif msg_box.clickedButton() == raw_btn:
+            import_mode = "raw"
+        else:
+            return # User canceled
+
         # Handle Remember Me Credential Caching
         if self.remember_me_cb.isChecked():
             save_credentials(email, password)
@@ -513,7 +567,8 @@ class MainWindow(QMainWindow):
             "headless": self.radio_headless.isChecked(),
             "typing_speed_ms": self.speed_slider.value(),
             "timeout_ms": settings.DEFAULT_TIMEOUT_MS,
-            "retries": settings.DEFAULT_RETRIES
+            "retries": settings.DEFAULT_RETRIES,
+            "import_mode": import_mode
         }
 
         # 3. Disable Controls
@@ -635,6 +690,7 @@ class MainWindow(QMainWindow):
         self.btn_browse_files.setEnabled(enabled)
         self.btn_browse_folder.setEnabled(enabled)
         self.btn_clear_queue.setEnabled(enabled)
+        self.btn_info.setEnabled(enabled)
         self.drag_drop_zone.setEnabled(enabled)
 
     def closeEvent(self, event):

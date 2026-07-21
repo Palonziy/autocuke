@@ -117,10 +117,13 @@ class ScenarioPage(BasePage):
             await self.capture_screenshot(f"create_scenario_{name}_failed")
             return False
 
-    async def enter_steps(self, steps: list[ScenarioStep]) -> bool:
+    async def enter_steps(self, steps: list[ScenarioStep], import_mode: str = "default", scenario_name: str = "") -> bool:
         """Enters actions and results into the scenario editor."""
-        logger.info(f"Entering {len(steps)} steps into scenario...")
+        logger.info(f"Entering {len(steps)} steps into scenario (mode={import_mode})...")
         try:
+            if import_mode == "raw":
+                return await self.enter_steps_raw(scenario_name, steps)
+
             # Detect editor type: Gherkin Textarea vs BDD Step Editor vs Classic Manual Step Editor
             is_gherkin = await self.page.locator(".gherkin-editor, .ace_editor, textarea#scenario_gherkin, textarea.gherkin-textarea").count() > 0
             is_bdd = await self.page.locator(".t-add-step-input").count() > 0
@@ -137,6 +140,124 @@ class ScenarioPage(BasePage):
         except Exception as e:
             logger.error(f"Failed to enter steps: {e}")
             await self.capture_screenshot("enter_steps_failed")
+            return False
+
+    async def enter_steps_raw(self, name: str, steps: list[ScenarioStep]) -> bool:
+        """Enters steps using CucumberStudio's Raw Version bulk editor."""
+        logger.info(f"Entering steps in Raw Version mode for scenario '{name}'...")
+        try:
+            # 1. Click "Raw Version" link
+            raw_link = None
+            raw_link_selectors = [
+                self.page.locator("a:has-text('Raw Version')"),
+                self.page.locator("button:has-text('Raw Version')"),
+                self.page.locator(".t-raw-version"),
+                self.page.locator(".raw-version"),
+                self.page.locator("text=Raw Version")
+            ]
+            for sel in raw_link_selectors:
+                if await sel.count() > 0 and await sel.is_visible():
+                    raw_link = sel
+                    break
+            
+            if not raw_link:
+                logger.error("Could not find 'Raw Version' link. Falling back to step-by-step editor.")
+                return await self.enter_steps(steps, import_mode="default")
+            
+            await self.click(raw_link, "Raw Version Link")
+            await asyncio.sleep(1.5) # Wait for editor to switch
+            
+            # 2. Find raw text editor textarea
+            editor_textarea = None
+            editor_locators = [
+                self.page.locator(".steps-editor textarea:visible"),
+                self.page.locator("textarea.raw-steps"),
+                self.page.locator("textarea.t-raw-steps"),
+                self.page.locator(".raw-version-editor textarea"),
+                self.page.locator("textarea:visible")
+            ]
+            for loc in editor_locators:
+                if await loc.count() > 0 and await loc.is_visible():
+                    editor_textarea = loc
+                    break
+                    
+            if not editor_textarea:
+                logger.error("Raw Version editor textarea not found.")
+                return False
+                
+            # 3. Construct raw scenario text
+            lines = []
+            escaped_name = name.replace("'", "\\'")
+            lines.append(f"scenario '{escaped_name}' do")
+            
+            is_first_action = True
+            for step in steps:
+                # Actions
+                actions = [a.strip() for a in step.action.split('\n') if a.strip()]
+                for action in actions:
+                    has_keyword = False
+                    words = action.split()
+                    if words:
+                        has_keyword = words[0].lower() in ["given", "when", "then", "and", "but"]
+                    
+                    if has_keyword:
+                        action_text = action
+                    else:
+                        keyword = "Given" if is_first_action else "When"
+                        action_text = f"{keyword} {action}"
+                    is_first_action = False
+                    
+                    escaped_action = action_text.replace('"', '\\"')
+                    lines.append(f'  step {{action: "{escaped_action}"}}')
+                    
+                # Results
+                results = [r.strip() for r in step.result.split('\n') if r.strip()] if step.result else []
+                for result in results:
+                    has_keyword = False
+                    words = result.split()
+                    if words:
+                        has_keyword = words[0].lower() in ["given", "when", "then", "and", "but"]
+                        
+                    if has_keyword:
+                        result_text = result
+                    else:
+                        result_text = f"Then {result}"
+                        
+                    escaped_result = result_text.replace('"', '\\"')
+                    lines.append(f'  step {{result: "{escaped_result}"}}')
+                    
+            lines.append("end")
+            raw_text = "\n".join(lines)
+            
+            # 4. Fill text into textarea
+            await editor_textarea.focus()
+            await editor_textarea.fill(raw_text)
+            await asyncio.sleep(0.5)
+            
+            # 5. Click "Back To Editor" to save and return
+            back_link = None
+            back_link_selectors = [
+                self.page.locator("a:has-text('Back To Editor')"),
+                self.page.locator("button:has-text('Back To Editor')"),
+                self.page.locator(".t-back-to-editor"),
+                self.page.locator(".back-to-editor"),
+                self.page.locator("text=Back To Editor")
+            ]
+            for sel in back_link_selectors:
+                if await sel.count() > 0 and await sel.is_visible():
+                    back_link = sel
+                    break
+                    
+            if back_link:
+                await self.click(back_link, "Back To Editor Link")
+                await asyncio.sleep(1.5)
+            else:
+                logger.warning("Could not find 'Back To Editor' link. Attempting save directly.")
+                
+            return True
+        except Exception as e:
+            logger.error(f"Failed to enter steps in Raw Version mode: {e}")
+            await self.capture_screenshot("raw_version_failed")
             return False
 
     async def _enter_steps_manual(self, steps: list[ScenarioStep]) -> bool:

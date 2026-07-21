@@ -46,6 +46,7 @@ class ImportWorker(QThread):
         self.typing_delay_ms = config_data.get("typing_speed_ms", settings.DEFAULT_TYPING_SPEED_MS)
         self.timeout_ms = config_data.get("timeout_ms", settings.DEFAULT_TIMEOUT_MS)
         self.retries = config_data.get("retries", settings.DEFAULT_RETRIES)
+        self.import_mode = config_data.get("import_mode", "default")
 
         self.progress_mgr = ProgressManager()
         self.browser_mgr = None
@@ -299,7 +300,7 @@ class ImportWorker(QThread):
                         raise Exception(f"Failed to create scenario: '{scenario.name}'")
 
                     # Type steps
-                    steps_success = await self.scenario_page.enter_steps(scenario.steps)
+                    steps_success = await self.scenario_page.enter_steps(scenario.steps, import_mode=self.import_mode, scenario_name=scenario.name)
                     if not steps_success:
                         raise Exception(f"Failed to enter steps in scenario: '{scenario.name}'")
 
@@ -373,6 +374,16 @@ class ImportWorker(QThread):
         # Format final error report
         error_count = len(failed_tasks)
         if error_count == 0 and not self.is_stopped:
+            elapsed_sec = int(time.time() - start_time)
+            self.progress_signal.emit({
+                "current_file": "-",
+                "current_scenario": "-",
+                "completed": total_scenarios,
+                "total": total_scenarios,
+                "progress_percent": 100,
+                "elapsed": str(datetime.timedelta(seconds=elapsed_sec)),
+                "eta": "00:00:00"
+            })
             self.progress_mgr.clear()
             
         msg = f"Finished! Total: {total_scenarios}, Imported: {completed_count - skipped_count}, Skipped: {skipped_count}, Errors: {error_count}"
