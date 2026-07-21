@@ -1,6 +1,12 @@
+import os
+import sys
 import logging
 from playwright.async_api import async_playwright, Browser, BrowserContext, Page
 from app.config import settings
+
+# Force Playwright to always store/look for browsers inside LOCALAPPDATA/AutoCuke/ms-playwright
+# This prevents write-permission errors on C:/Program Files and packages cleanly.
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(settings.BASE_DIR / "ms-playwright")
 
 logger = logging.getLogger("CucumberStudioImporter")
 
@@ -27,24 +33,32 @@ class BrowserManager:
             err_msg = str(e).lower()
             if "executable doesn't exist" in err_msg or "playwright install" in err_msg or "not installed" in err_msg:
                 logger.info("Chromium browser binary not found. Installing Chromium automatically (this might take a minute)...")
-                import sys
-                import subprocess
+                
+                # Import playwright main entrypoint to execute installation programmatically
+                from playwright.__main__ import main as playwright_cli_main
+                
+                old_args = sys.argv
+                sys.argv = ["playwright", "install", "chromium"]
                 try:
-                    # Run the playwright installation command
-                    subprocess.run(
-                        [sys.executable, "-m", "playwright", "install", "chromium"],
-                        check=True,
-                        capture_output=True,
-                        text=True
-                    )
-                    logger.info("Chromium browser binary installed successfully. Retrying browser launch...")
-                    self._browser = await self._playwright.chromium.launch(
-                        headless=self.headless,
-                        args=["--disable-blink-features=AutomationControlled", "--start-maximized"]
-                    )
+                    # Run the playwright installation CLI directly in this process
+                    # (This prevents launching a second copy of the AutoCuke.exe GUI)
+                    playwright_cli_main()
+                except SystemExit as sys_exit:
+                    if sys_exit.code != 0:
+                        logger.error(f"Playwright installation CLI exited with code {sys_exit.code}")
+                        raise RuntimeError(f"Playwright installation failed with code {sys_exit.code}")
                 except Exception as install_err:
                     logger.error(f"Failed to automatically install Chromium: {install_err}")
                     raise install_err
+                finally:
+                    # Restore original command-line arguments
+                    sys.argv = old_args
+                
+                logger.info("Chromium browser binary installed successfully. Retrying browser launch...")
+                self._browser = await self._playwright.chromium.launch(
+                    headless=self.headless,
+                    args=["--disable-blink-features=AutomationControlled", "--start-maximized"]
+                )
             else:
                 raise e
         
