@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com; img-src 'self' data:;">
     <title>AutoCuke - Smart CucumberStudio Scenario Importer</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -730,12 +731,52 @@
         @media (max-width: 900px) {
             .grid-3, .os-grid {
                 grid-template-columns: 1fr;
+                gap: 20px;
             }
             .hero h1 {
-                font-size: 40px;
+                font-size: 42px;
+                letter-spacing: -1px;
+            }
+            .hero p {
+                font-size: 18px;
             }
             .nav-links {
                 display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding: 60px 16px;
+                margin: 20px auto;
+                border-radius: 20px;
+            }
+            .hero h1 {
+                font-size: 32px;
+                line-height: 1.25;
+            }
+            .hero p {
+                font-size: 15px;
+            }
+            .os-detect-card {
+                padding: 24px 16px;
+                margin-bottom: 32px;
+            }
+            .btn-main-download {
+                font-size: 16px;
+                padding: 14px 24px;
+            }
+            .fake-sidebar {
+                display: none;
+            }
+            .mockup-content {
+                aspect-ratio: 16/11;
+            }
+            .fake-main {
+                width: 100%;
+            }
+            .feature-card, .os-card {
+                padding: 24px 16px;
             }
         }
         /* Modal Style */
@@ -896,7 +937,7 @@
             </a>
             <p class="download-meta">
                 <span id="download-meta-text">Standalone bundle, size ~70MB</span>
-                <span id="download-count-wrapper" style="display: none;"> • <strong id="download-count-badge" style="color: var(--primary);">0 downloads</strong></span>
+                <span id="download-count-wrapper" style="display: none;"><strong id="download-count-badge" style="color: var(--primary);">0 downloads</strong></span>
             </p>
         </div>
 
@@ -1163,7 +1204,8 @@
                         
                         if (countWrapper && countBadge) {
                             countBadge.textContent = `${totalDownloads} download${totalDownloads > 1 ? 's' : ''}`;
-                            countWrapper.style.display = "inline";
+                            countWrapper.style.display = "block";
+                            countWrapper.style.marginTop = "8px";
                         }
                         
                         if (winWrapper && winCount) {
