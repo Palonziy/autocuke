@@ -149,15 +149,17 @@ class ScenarioPage(BasePage):
             # 1. Click "Raw Version" link
             raw_link = None
             raw_link_selectors = [
+                self.page.locator("button.t-editor-toggle"),
+                self.page.locator(".t-editor-toggle"),
+                self.page.locator("button:has-text('Raw version')"),
                 self.page.locator("a:has-text('Raw Version')"),
-                self.page.locator("button:has-text('Raw Version')"),
                 self.page.locator(".t-raw-version"),
                 self.page.locator(".raw-version"),
                 self.page.locator("text=Raw Version")
             ]
             for sel in raw_link_selectors:
-                if await sel.count() > 0 and await sel.is_visible():
-                    raw_link = sel
+                if await sel.count() > 0 and await sel.first.is_visible():
+                    raw_link = sel.first
                     break
             
             if not raw_link:
@@ -177,8 +179,8 @@ class ScenarioPage(BasePage):
                 self.page.locator("textarea:visible")
             ]
             for loc in editor_locators:
-                if await loc.count() > 0 and await loc.is_visible():
-                    editor_textarea = loc
+                if await loc.count() > 0 and await loc.first.is_visible():
+                    editor_textarea = loc.first
                     break
                     
             if not editor_textarea:
@@ -237,6 +239,8 @@ class ScenarioPage(BasePage):
             # 5. Click "Back To Editor" to save and return
             back_link = None
             back_link_selectors = [
+                self.page.locator("button.t-editor-toggle"),
+                self.page.locator(".t-editor-toggle"),
                 self.page.locator("a:has-text('Back To Editor')"),
                 self.page.locator("button:has-text('Back To Editor')"),
                 self.page.locator(".t-back-to-editor"),
@@ -244,8 +248,8 @@ class ScenarioPage(BasePage):
                 self.page.locator("text=Back To Editor")
             ]
             for sel in back_link_selectors:
-                if await sel.count() > 0 and await sel.is_visible():
-                    back_link = sel
+                if await sel.count() > 0 and await sel.first.is_visible():
+                    back_link = sel.first
                     break
                     
             if back_link:
