@@ -169,9 +169,19 @@ class ScenarioPage(BasePage):
             await self.click(raw_link, "Raw Version Link")
             await asyncio.sleep(1.5) # Wait for editor to switch
             
+            # Wait for any loading spinners to disappear
+            try:
+                await self.page.locator("#spinner-xl, .spinner, .loading").first.wait_for(state="hidden", timeout=10000)
+            except Exception:
+                pass
+            await asyncio.sleep(0.5)
+            
             # 2. Find and click the raw text editor container to focus it
             editor_container = None
             container_selectors = [
+                self.page.locator(".CodeMirror"),
+                self.page.locator(".CodeMirror-scroll"),
+                self.page.locator(".CodeMirror-code"),
                 self.page.locator(".steps-editor"),
                 self.page.locator(".raw-version-editor"),
                 self.page.locator(".steps-raw-editor"),
@@ -183,14 +193,23 @@ class ScenarioPage(BasePage):
                     break
             
             if editor_container:
-                await self.click(editor_container, "Raw Editor Container")
-                await asyncio.sleep(0.5)
+                await editor_container.click(force=True)
+                await asyncio.sleep(0.3)
             else:
                 # Fallback to finding visible textarea and clicking it
                 editor_textarea = self.page.locator("textarea:visible").first
                 if await editor_textarea.count() > 0:
-                    await editor_textarea.click()
-                    await asyncio.sleep(0.5)
+                    await editor_textarea.click(force=True)
+                    await asyncio.sleep(0.3)
+
+            # Focus the textarea to ensure keyboard events target the editor input field
+            active_textarea = self.page.locator(".CodeMirror textarea, textarea:visible").first
+            if await active_textarea.count() > 0:
+                try:
+                    await active_textarea.focus()
+                    await asyncio.sleep(0.2)
+                except Exception:
+                    pass
                 
             # 3. Construct raw scenario text
             lines = []
