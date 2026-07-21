@@ -727,11 +727,145 @@
             transition: border-color 0.3s ease;
         }
 
+        /* Format Guide Section */
+        .format-guide {
+            padding: 80px 0;
+            background: rgba(25, 135, 84, 0.01);
+            border-top: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+            margin-top: 40px;
+        }
+
+        .code-box {
+            background: #0f172a;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .code-header {
+            background: #1e293b;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .code-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .code-title {
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .code-content {
+            padding: 24px;
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            overflow-x: auto;
+            text-align: left;
+        }
+
+        .code-content .comment {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .code-content .keyword {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .guideline-info {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            text-align: left;
+        }
+
+        .guideline-card {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .guideline-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-light);
+            box-shadow: 0 10px 30px rgba(25, 135, 84, 0.04);
+        }
+
+        .guideline-num {
+            background: rgba(25, 135, 84, 0.08);
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .guideline-card h4 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .guideline-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .guideline-card code {
+            background: rgba(25, 135, 84, 0.05);
+            color: var(--primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
         /* Responsive Design */
         @media (max-width: 900px) {
             .grid-3, .os-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
+            }
+            .format-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
             }
             .hero h1 {
                 font-size: 42px;
@@ -1047,6 +1181,76 @@
                     <div class="os-name">Linux</div>
                     <div class="os-ver">Ubuntu / Debian (AppImage)</div>
                     <a href="#" class="btn-os-dl">Download AppImage</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TXT Format Guide -->
+    <section class="format-guide" id="format-guide">
+        <div class="container">
+            <div class="section-title">
+                <h2>Scenario File Format</h2>
+                <p>Structure your plain-text scenario files using simple, clean syntax rules.</p>
+            </div>
+            
+            <div class="format-grid">
+                <!-- Example Code Box -->
+                <div class="code-box">
+                    <div class="code-header">
+                        <span class="code-dot" style="background: #ef4444;"></span>
+                        <span class="code-dot" style="background: #eab308;"></span>
+                        <span class="code-dot" style="background: #22c55e;"></span>
+                        <span class="code-title">login_tests.txt</span>
+                    </div>
+                    <pre class="code-content"><code><span class="comment"># Comments start with # or //</span>
+<span class="keyword">Folder:</span> User Authentication
+<span class="keyword">Subfolder:</span> Sign In Flow
+
+<span class="keyword">Scenario:</span> Successful sign in with valid credentials
+<span class="keyword">Action:</span> Open login page and enter valid email and password
+<span class="keyword">Result:</span> Dashboard page is displayed successfully
+
+<span class="keyword">Scenario:</span> Sign in failure with incorrect password
+<span class="keyword">Action:</span> Enter invalid password in credential form
+and submit
+<span class="keyword">Result:</span> Error message is displayed on form
+"Invalid username or password"</code></pre>
+                </div>
+                
+                <!-- Guidelines List -->
+                <div class="guideline-info">
+                    <div class="guideline-card">
+                        <div class="guideline-num">1</div>
+                        <div>
+                            <h4>Hierarchical Folders</h4>
+                            <p>Use <code>Folder:</code> and <code>Subfolder:</code> keywords to group scenarios into categories. Folders are automatically generated in CucumberStudio recursively.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="guideline-card">
+                        <div class="guideline-num">2</div>
+                        <div>
+                            <h4>Scenario Declarations</h4>
+                            <p>Mark each test case using the <code>Scenario:</code> prefix, followed by a unique, descriptive title.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="guideline-card">
+                        <div class="guideline-num">3</div>
+                        <div>
+                            <h4>Actions & Expected Results</h4>
+                            <p>List steps sequentially using <code>Action:</code> and <code>Result:</code>. Multi-line descriptions are fully supported on subsequent lines.</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-card">
+                        <div class="guideline-num">4</div>
+                        <div>
+                            <h4>Clean Comments</h4>
+                            <p>Prefix lines with <code>#</code> or <code>//</code> to write custom developer notes; the importer will automatically skip them.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
