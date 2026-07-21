@@ -169,23 +169,28 @@ class ScenarioPage(BasePage):
             await self.click(raw_link, "Raw Version Link")
             await asyncio.sleep(1.5) # Wait for editor to switch
             
-            # 2. Find raw text editor textarea
-            editor_textarea = None
-            editor_locators = [
-                self.page.locator(".steps-editor textarea:visible"),
-                self.page.locator("textarea.raw-steps"),
-                self.page.locator("textarea.t-raw-steps"),
-                self.page.locator(".raw-version-editor textarea"),
-                self.page.locator("textarea:visible")
+            # 2. Find and click the raw text editor container to focus it
+            editor_container = None
+            container_selectors = [
+                self.page.locator(".steps-editor"),
+                self.page.locator(".raw-version-editor"),
+                self.page.locator(".steps-raw-editor"),
+                self.page.locator(".editor")
             ]
-            for loc in editor_locators:
-                if await loc.count() > 0 and await loc.first.is_visible():
-                    editor_textarea = loc.first
+            for sel in container_selectors:
+                if await sel.count() > 0 and await sel.first.is_visible():
+                    editor_container = sel.first
                     break
-                    
-            if not editor_textarea:
-                logger.error("Raw Version editor textarea not found.")
-                return False
+            
+            if editor_container:
+                await self.click(editor_container, "Raw Editor Container")
+                await asyncio.sleep(0.5)
+            else:
+                # Fallback to finding visible textarea and clicking it
+                editor_textarea = self.page.locator("textarea:visible").first
+                if await editor_textarea.count() > 0:
+                    await editor_textarea.click()
+                    await asyncio.sleep(0.5)
                 
             # 3. Construct raw scenario text
             lines = []
@@ -231,10 +236,13 @@ class ScenarioPage(BasePage):
             lines.append("end")
             raw_text = "\n".join(lines)
             
-            # 4. Fill text into textarea
-            await editor_textarea.focus()
-            await editor_textarea.fill(raw_text)
-            await asyncio.sleep(0.5)
+            # 4. Fill text via keyboard inputs (Control+A -> Backspace -> Type) to guarantee compatibility with Ace/CodeMirror rich text editors
+            await self.page.keyboard.press("Control+A")
+            await asyncio.sleep(0.3)
+            await self.page.keyboard.press("Backspace")
+            await asyncio.sleep(0.3)
+            await self.page.keyboard.insert_text(raw_text)
+            await asyncio.sleep(1.0) # Let Ace Editor process input events
             
             # 5. Click "Back To Editor" to save and return
             back_link = None
