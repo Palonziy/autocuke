@@ -13,6 +13,8 @@ from app.pages.login_page import LoginPage
 from app.pages.project_page import ProjectPage
 from app.pages.scenario_page import ScenarioPage
 
+from playwright.async_api import Error as PlaywrightError, TargetClosedError
+
 logger = logging.getLogger("CucumberStudioImporter")
 
 class ImportWorker(QThread):
@@ -130,6 +132,18 @@ class ImportWorker(QThread):
         """Main QThread entry point. Starts the asyncio event loop."""
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
+        
+        def handle_asyncio_exception(loop, context):
+            exception = context.get("exception")
+            msg = str(context.get("message", ""))
+            if (isinstance(exception, (TargetClosedError, PlaywrightError, asyncio.CancelledError)) or 
+                "Target page, context or browser has been closed" in msg or 
+                "Target closed" in msg):
+                logger.debug(f"Silenced Playwright target closed exception during stop: {exception or msg}")
+                return
+            loop.default_exception_handler(context)
+
+        self._loop.set_exception_handler(handle_asyncio_exception)
         
         try:
             self._loop.run_until_complete(self.async_run())
