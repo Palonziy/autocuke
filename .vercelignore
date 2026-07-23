@@ -1,0 +1,13 @@
+app/
+build/
+dist/
+ms-playwright/
+logs/
+scratch/
+tests/
+progress/
+requirements.txt
+AutoCuke.spec
+AutoCuke-Windows.zip
+.env
+.env.example
