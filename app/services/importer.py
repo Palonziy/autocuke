@@ -96,15 +96,35 @@ class ImportWorker(QThread):
             logger.info("Import process resumed by user.")
 
     def stop(self):
-        """Stops the worker."""
+        """Stops the worker immediately and aborts active Playwright browser actions."""
+        if self.is_stopped:
+            return
         self.is_stopped = True
+        logger.info("Import process stop requested by user. Terminating browser automation session...")
+        self.status_signal.emit("Stopping...")
+        
         # If paused, resume it so it can exit the wait and stop
         if self.is_paused:
             self.resume()
+            
         # Force-release any active retry wait block
         self.confirm_retry(False)
-        self.status_signal.emit("Stopped")
-        logger.info("Import process stop requested by user.")
+        
+        # Schedule immediate browser force close on event loop to interrupt in-flight Playwright await calls
+        if self._loop and self._loop.is_running():
+            try:
+                asyncio.run_coroutine_threadsafe(self._force_close_browser(), self._loop)
+            except Exception as e:
+                logger.warning(f"Could not schedule browser force close: {e}")
+
+    async def _force_close_browser(self):
+        """Forcefully closes browser manager to instantly abort pending Playwright page actions."""
+        if self.browser_mgr:
+            try:
+                logger.info("Closing Playwright context to abort active actions immediately...")
+                await self.browser_mgr.close()
+            except Exception as e:
+                logger.warning(f"Error during forced browser close: {e}")
 
     def run(self):
         """Main QThread entry point. Starts the asyncio event loop."""
@@ -321,6 +341,9 @@ class ImportWorker(QThread):
                     completed_count += 1
                     logger.info(f"Successfully imported scenario: '{scenario.name}' ({completed_count}/{total_scenarios})")
                 except Exception as e:
+                    if self.is_stopped:
+                        logger.info("Import process stopped by user. Aborting remaining scenarios.")
+                        break
                     logger.error(f"Error importing scenario '{scenario.name}' in {file_name}: {e}")
                     await self.scenario_page.capture_screenshot(f"error_{scenario.name}")
                     failed_tasks.append((file_path, scenario))
@@ -329,6 +352,9 @@ class ImportWorker(QThread):
                     try:
                         await self._recover_session()
                     except Exception as rec_err:
+                        if self.is_stopped:
+                            logger.info("Import process stopped by user during recovery attempt.")
+                            break
                         logger.critical(f"Critical: Failed to recover browser session: {rec_err}")
                         self.finished_signal.emit(False, f"Execution failed. Browser disconnected and recovery failed: {rec_err}")
                         await self.browser_mgr.close()
@@ -429,6 +455,8 @@ class ImportWorker(QThread):
 
     async def _recover_session(self):
         """Recovers browser session on failure."""
+        if self.is_stopped:
+            return
         logger.info("Recovering browser session...")
         if self.browser_mgr:
             try:

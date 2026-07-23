@@ -1,7 +1,8 @@
 import logging
 import os
+import time
 from pathlib import Path
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Qt, Signal, Slot, QCoreApplication
 from PySide6.QtGui import QIcon, QKeySequence, QShortcut, QPixmap
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, 
@@ -621,11 +622,13 @@ Result: Dashboard page is loaded
             self.btn_resume.setEnabled(False)
 
     def stop_import(self):
-        if self.worker:
-            self.status_bar.showMessage("Stopping active processes...")
+        if self.worker and self.worker.isRunning():
+            self.status_bar.showMessage("Stopping active processes... Please wait")
             self.btn_stop.setEnabled(False)
+            self.btn_stop.setText("Stopping...")
             self.btn_pause.setEnabled(False)
             self.btn_resume.setEnabled(False)
+            logger.info("Stop requested by user. Aborting active automation tasks...")
             self.worker.stop()
 
     def update_status_label(self, status: str):
@@ -660,6 +663,7 @@ Result: Dashboard page is loaded
         self.btn_pause.setEnabled(False)
         self.btn_resume.setEnabled(False)
         self.btn_stop.setEnabled(False)
+        self.btn_stop.setText("Stop")
 
         # Mark all files in Queue table as completed or failed
         files = self.queue_manager.get_files()
@@ -694,15 +698,25 @@ Result: Dashboard page is loaded
         self.drag_drop_zone.setEnabled(enabled)
 
     def closeEvent(self, event):
-        """Ensures background threads and browser sessions are fully cleaned up on window close."""
+        """Ensures background threads and browser sessions are fully cleaned up on window close without freezing UI."""
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(
-                self, "Exit", "Import execution is still running. Are you sure you want to exit? Active operations will abort.", 
+                self, "Exit Application", "Import execution is currently running. Are you sure you want to stop and exit?", 
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
             )
             if reply == QMessageBox.StandardButton.Yes:
+                self.status_bar.showMessage("Stopping worker and exiting application...")
                 self.worker.stop()
-                self.worker.wait() # wait for clean thread exit
+                
+                # Non-blocking wait: pump GUI event loop while waiting for worker thread to exit
+                start_t = time.time()
+                while self.worker.isRunning():
+                    QCoreApplication.processEvents()
+                    self.worker.wait(50)  # 50ms polling slices
+                    if time.time() - start_t > 3.5:
+                        logger.warning("Worker thread did not exit within 3.5s. Force terminating...")
+                        self.worker.terminate()
+                        break
                 event.accept()
             else:
                 event.ignore()
