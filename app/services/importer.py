@@ -13,7 +13,8 @@ from app.pages.login_page import LoginPage
 from app.pages.project_page import ProjectPage
 from app.pages.scenario_page import ScenarioPage
 
-from playwright.async_api import Error as PlaywrightError, TargetClosedError
+from playwright.async_api import Error as PlaywrightError
+from playwright._impl._errors import TargetClosedError
 
 logger = logging.getLogger("CucumberStudioImporter")
 
