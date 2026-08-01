@@ -216,40 +216,17 @@ class ScenarioPage(BasePage):
             escaped_name = name.replace("'", "\\'")
             lines.append(f"scenario '{escaped_name}' do")
             
-            is_first_action = True
             for step in steps:
                 # Actions
                 actions = [a.strip() for a in step.action.split('\n') if a.strip()]
                 for action in actions:
-                    has_keyword = False
-                    words = action.split()
-                    if words:
-                        has_keyword = words[0].lower() in ["given", "when", "then", "and", "but"]
-                    
-                    if has_keyword:
-                        action_text = action
-                    else:
-                        keyword = "Given" if is_first_action else "When"
-                        action_text = f"{keyword} {action}"
-                    is_first_action = False
-                    
-                    escaped_action = action_text.replace('"', '\\"')
+                    escaped_action = action.replace('"', '\\"')
                     lines.append(f'  step {{action: "{escaped_action}"}}')
                     
                 # Results
                 results = [r.strip() for r in step.result.split('\n') if r.strip()] if step.result else []
                 for result in results:
-                    has_keyword = False
-                    words = result.split()
-                    if words:
-                        has_keyword = words[0].lower() in ["given", "when", "then", "and", "but"]
-                        
-                    if has_keyword:
-                        result_text = result
-                    else:
-                        result_text = f"Then {result}"
-                        
-                    escaped_result = result_text.replace('"', '\\"')
+                    escaped_result = result.replace('"', '\\"')
                     lines.append(f'  step {{result: "{escaped_result}"}}')
                     
             lines.append("end")
@@ -355,8 +332,6 @@ class ScenarioPage(BasePage):
             await self.capture_screenshot("bdd_input_not_visible")
             return False
             
-        is_first_action = True
-        
         for step_idx, step in enumerate(steps):
             # Split actions and expected results by newline to enter them line-by-line
             actions = [a.strip() for a in step.action.split('\n') if a.strip()]
@@ -374,22 +349,8 @@ class ScenarioPage(BasePage):
                 await add_step_input.focus()
                 await asyncio.sleep(0.5)  # Let focus settle and JS event handlers attach
                 
-                # Check if the line already starts with a BDD keyword
-                has_keyword = False
-                words = action.split()
-                if words:
-                    has_keyword = words[0].lower() in ["given", "when", "then", "and", "but"]
-                    
-                if has_keyword:
-                    action_text = action
-                else:
-                    keyword = "Given" if is_first_action else "When"
-                    action_text = f"{keyword} {action}"
-                    
-                is_first_action = False
-                
-                logger.info(f"Typing action line: '{action_text}'")
-                await add_step_input.press_sequentially(action_text, delay=30)
+                logger.info(f"Typing action line: '{action}'")
+                await add_step_input.press_sequentially(action, delay=30)
                 await asyncio.sleep(0.3)
                 
                 # Click the action option or press Enter
@@ -412,19 +373,8 @@ class ScenarioPage(BasePage):
                 await add_step_input.focus()
                 await asyncio.sleep(0.5)  # Let focus settle and JS event handlers attach
                 
-                # Check if the line already starts with a BDD keyword
-                has_keyword = False
-                words = result.split()
-                if words:
-                    has_keyword = words[0].lower() in ["given", "when", "then", "and", "but"]
-                    
-                if has_keyword:
-                    result_text = result
-                else:
-                    result_text = f"Then {result}"
-                
-                logger.info(f"Typing result line: '{result_text}'")
-                await add_step_input.press_sequentially(result_text, delay=30)
+                logger.info(f"Typing result line: '{result}'")
+                await add_step_input.press_sequentially(result, delay=30)
                 await asyncio.sleep(0.3)
                 
                 # Click the result option
@@ -442,14 +392,10 @@ class ScenarioPage(BasePage):
     async def _enter_steps_gherkin(self, steps: list[ScenarioStep]) -> bool:
         """Formats actions and results into Gherkin format and writes into text editor."""
         gherkin_lines = []
-        for idx, step in enumerate(steps):
-            # Format Action
-            prefix = "Given" if idx == 0 else "When"
-            gherkin_lines.append(f"  {prefix} {step.action}")
-            
-            # Format Result
+        for step in steps:
+            gherkin_lines.append(f"  {step.action}")
             if step.result:
-                gherkin_lines.append(f"  Then {step.result}")
+                gherkin_lines.append(f"  {step.result}")
                 
         gherkin_text = "\n".join(gherkin_lines)
         
