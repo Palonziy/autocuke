@@ -444,17 +444,18 @@ class ScenarioPage(BasePage):
             logger.error(f"Error saving scenario: {e}")
             return False
 
-    async def go_back_to_folder(self, folder_name: str) -> bool:
+    async def go_back_to_folder(self, folder_name: str | None = None) -> bool:
         """Navigates back to the current folder by clicking the breadcrumb or returning to project root."""
         logger.info(f"Navigating back to folder: '{folder_name}'")
         try:
-            # Try breadcrumb link first
-            breadcrumb = self.page.locator(f".breadcrumb a:has-text('{folder_name}'), .breadcrumbs a:has-text('{folder_name}'), .t-breadcrumb a:has-text('{folder_name}')")
-            if await breadcrumb.count() > 0:
-                await self.click(breadcrumb.first, f"Breadcrumb '{folder_name}'")
-                await self.page.wait_for_load_state("domcontentloaded")
-                await asyncio.sleep(0.5)
-                return True
+            # Try breadcrumb link first if folder_name is specified
+            if folder_name:
+                breadcrumb = self.page.locator(f".breadcrumb a:has-text('{folder_name}'), .breadcrumbs a:has-text('{folder_name}'), .t-breadcrumb a:has-text('{folder_name}')")
+                if await breadcrumb.count() > 0:
+                    await self.click(breadcrumb.first, f"Breadcrumb '{folder_name}'")
+                    await self.page.wait_for_load_state("domcontentloaded")
+                    await asyncio.sleep(0.5)
+                    return True
                 
             # Direct project root URL fallback to keep project context
             import re

@@ -345,12 +345,13 @@ class ImportWorker(QThread):
                          raise Exception(f"Failed to save scenario: '{scenario.name}'")
 
                     # Mark completed
+                    self.progress_mgr.mark_scenario_completed(file_path, scenario.name)
                     if retry_round == 0:
-                        self.progress_mgr.mark_scenario_completed(file_path, scenario.name)
                         self.progress_mgr.set_current_state(file_name, idx)
                     
                     # Navigate back to folder view
-                    await self.scenario_page.go_back_to_folder(scenario.folders[-1])
+                    target_folder = scenario.folders[-1] if scenario.folders else None
+                    await self.scenario_page.go_back_to_folder(target_folder)
                     
                     success = True
                     completed_count += 1
