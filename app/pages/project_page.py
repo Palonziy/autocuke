@@ -11,32 +11,52 @@ class ProjectPage(BasePage):
         super().__init__(page, typing_delay_ms)
 
     async def list_projects(self) -> list[str]:
-        """Lists all projects available on the CucumberStudio dashboard."""
+        """Lists all real user projects available on the CucumberStudio dashboard."""
         logger.info("Listing available projects...")
         try:
             await self.navigate(settings.PROJECTS_URL, "Projects Page")
             await self.page.wait_for_load_state("networkidle")
             
-            # Find all links that represent projects
-            links = await self.page.locator("a").all()
+            # Scroll down to ensure all lazy-loaded Ember.js project cards are rendered
+            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(0.5)
+            
+            import re
             projects = []
+            
+            # Excluded template/control keywords
+            excluded_keywords = [
+                "new project", "all projects", "example projects", "import data", 
+                "sample project", "create project", "import project", "demo project",
+                "documentation", "help", "support", "sign out"
+            ]
+            
+            # Targeted project name selectors in CucumberStudio
+            project_elements = self.page.locator(".t-project-name, .t-project-title, a.t-project-link, .project-card a, .project-name")
+            count = await project_elements.count()
+            for i in range(count):
+                el = project_elements.nth(i)
+                text = await el.inner_text()
+                clean_name = text.strip().split("\n")[0].strip()
+                if clean_name and clean_name not in projects:
+                    if not any(x in clean_name.lower() for x in excluded_keywords):
+                        projects.append(clean_name)
+            
+            # Additional scan: Links with numeric project IDs in URL (/projects/12345)
+            links = await self.page.locator("a[href*='/projects/']").all()
             for link in links:
-                href = await link.get_attribute("href")
-                text = await link.inner_text()
-                if not text:
-                    continue
-                
-                # Split by newline and take the first non-empty line as the clean project name
-                lines = [l.strip() for l in text.split("\n") if l.strip()]
-                if not lines:
-                    continue
-                proj_name = lines[0]
-                
-                # Filter for project dashboard links
-                if href and ("/projects/" in href or href.endswith("/projects")):
-                    # Skip common control links
-                    if proj_name and not any(x in proj_name.lower() for x in ["new project", "all projects", "documentation", "help", "support", "sign out"]):
-                        if proj_name not in projects:
+                href = await link.get_attribute("href") or ""
+                # Real user projects in CucumberStudio ALWAYS contain a numeric project ID
+                if re.search(r'/projects/\d+', href):
+                    text = await link.inner_text()
+                    if not text:
+                        continue
+                    lines = [l.strip() for l in text.split("\n") if l.strip()]
+                    if not lines:
+                        continue
+                    proj_name = lines[0]
+                    if proj_name and proj_name not in projects:
+                        if not any(x in proj_name.lower() for x in excluded_keywords):
                             projects.append(proj_name)
             
             logger.info(f"Found projects: {projects}")
@@ -51,15 +71,34 @@ class ProjectPage(BasePage):
             logger.info(f"Selecting project: {project_name}")
             await self.navigate(settings.PROJECTS_URL, "Projects Page")
             await self.page.wait_for_load_state("networkidle")
+            
+            # Scroll to load all project cards
+            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(0.5)
 
-            # Look for exact text match first
-            link = self.page.get_by_role("link", name=project_name, exact=True)
-            if await link.count() == 0:
-                # Case-insensitive or partial match
-                link = self.page.locator(f"a:has-text('{project_name}')")
+            import re
+            links = await self.page.locator("a[href*='/projects/']").all()
+            target_link = None
+            
+            # Match project link by numeric project ID URL and name
+            for link in links:
+                href = await link.get_attribute("href") or ""
+                if re.search(r'/projects/\d+', href):
+                    text = await link.inner_text()
+                    if project_name.lower() in text.lower():
+                        target_link = link
+                        break
+            
+            if not target_link:
+                # Fallback to role or text selector
+                link = self.page.get_by_role("link", name=project_name, exact=True)
+                if await link.count() == 0:
+                    link = self.page.locator(f"a:has-text('{project_name}')")
+                if await link.count() > 0:
+                    target_link = link.first
 
-            if await link.count() > 0:
-                href = await link.first.get_attribute("href")
+            if target_link:
+                href = await target_link.get_attribute("href")
                 if href:
                     from urllib.parse import urljoin
                     scenarios_url = urljoin(self.page.url, href).rstrip("/") + "/test-plan"
@@ -69,7 +108,7 @@ class ProjectPage(BasePage):
                     logger.info(f"Successfully entered project and navigated to scenarios: {project_name}")
                     return True
                 else:
-                    await self.click(link.first, f"Project '{project_name}' link")
+                    await self.click(target_link, f"Project '{project_name}' link")
                     await self.page.wait_for_load_state("networkidle")
                     logger.info(f"Successfully entered project: {project_name}")
                     return True
