@@ -246,3 +246,16 @@ Upon compilation, the final build artifacts will reside in the `dist/` directory
 .\dist\CucumberStudioImporter\CucumberStudioImporter.exe
 ```
 *(The executable will automatically look for its configuration folders relative to the location where it is executed).*
+
+---
+
+## 📩 Support, Contact & Partnership
+
+For enterprise inquiries, custom BDD test automation integrations, bug reports, or partnership opportunities, feel free to reach out:
+
+- **Email:** [palonziy@gmail.com](mailto:palonziy@gmail.com)
+- **Website:** [autocuke.palosite.com](https://autocuke.palosite.com)
+- **GitHub Repository:** [github.com/Palonziy/autocuke](https://github.com/Palonziy/autocuke)
+
+### 🤝 Partnership & Collaboration
+We welcome open-source contributions, custom QA automation framework extensions, and commercial integration partnerships. If you are looking to adapt AutoCuke for your organization's CI/CD pipeline or require custom test management solutions, please get in touch via email.
