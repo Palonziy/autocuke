@@ -106,6 +106,54 @@ Launch the desktop interface by executing:
 python app/main.py
 ```
 
+---
+
+## 🍏 macOS & 🐧 Linux Quickstart Guide
+
+AutoCuke runs natively on macOS (Apple Silicon M1/M2/M3/M4 & Intel) and Linux (Ubuntu, Debian, Fedora, Arch) using Python 3.12+.
+
+### 🍏 Running on macOS:
+1. **Open Terminal** and navigate to the project directory:
+   ```bash
+   cd cucumber
+   ```
+2. **Create and Activate Virtual Environment:**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. **Install Dependencies & Playwright Engine:**
+   ```bash
+   pip install -r requirements.txt
+   python3 -m playwright install chromium
+   ```
+4. **Launch AutoCuke Desktop GUI:**
+   ```bash
+   PYTHONPATH=. python3 app/main.py
+   ```
+
+---
+
+### 🐧 Running on Linux (Ubuntu / Debian / Fedora):
+1. **Install Prerequisites (Qt & XCB libraries):**
+   ```bash
+   sudo apt update && sudo apt install -y python3-pip python3-venv libxcb-cursor0 libgl1
+   ```
+2. **Create Virtual Environment & Install Requirements:**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+3. **Install Playwright Chromium with System Dependencies:**
+   ```bash
+   python3 -m playwright install --with-deps chromium
+   ```
+4. **Launch AutoCuke Desktop GUI:**
+   ```bash
+   PYTHONPATH=. python3 app/main.py
+   ```
+
 ### How to Import Scenarios:
 1. **Login**: Type your Email and Password, then click **Test Connection**. This fetches your active project list.
 2. **Select Project**: Choose the target CucumberStudio project from the dropdown.

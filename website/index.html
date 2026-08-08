@@ -1164,8 +1164,11 @@
                 <div class="os-card" id="card-windows">
                     <div class="os-icon">🪟</div>
                     <div class="os-name">Windows</div>
-                    <div class="os-ver">Windows 10, 11 (x64)<span id="win-download-count-wrapper" style="display: none;"> • <strong id="win-download-count">0 downloads</strong></span></div>
-                    <a href="https://github.com/Palonziy/autocuke/releases/download/untagged-55647dcf0ec433d2e85c/AutoCuke-Windows.zip" class="btn-os-dl">Download ZIP</a>
+                    <div class="os-ver">Windows 10, 11 (x64)</div>
+                    <div id="win-download-count-wrapper" style="display: block; margin-top: 4px; font-size: 13px; color: var(--primary); font-weight: 700;">
+                        <span id="win-download-count">13 downloads</span>
+                    </div>
+                    <a href="https://github.com/Palonziy/autocuke/releases/download/untagged-55647dcf0ec433d2e85c/AutoCuke-Windows.zip" class="btn-os-dl" style="margin-top: 12px;">Download ZIP</a>
                 </div>
                 <!-- macOS -->
                 <div class="os-card" id="card-mac">
@@ -1415,8 +1418,8 @@ and submit
                 }
                 
                 if (winWrapper && winCount) {
-                    winCount.textContent = `${windowsDownloads} download${windowsDownloads > 1 ? 's' : ''}`;
-                    winWrapper.style.display = "inline";
+                    winCount.textContent = `${windowsDownloads} downloads`;
+                    winWrapper.style.display = "block";
                 }
             }
             
