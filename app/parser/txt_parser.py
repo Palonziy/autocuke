@@ -41,7 +41,7 @@ class TXTParser:
                 current_scenario = None
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, "r", encoding="utf-8-sig") as f:
                 lines = f.readlines()
         except Exception as e:
             logger.error(f"Failed to read file {file_path}: {e}")
