@@ -113,32 +113,46 @@ python app/main.py
 AutoCuke runs natively on macOS (Apple Silicon M1/M2/M3/M4 & Intel) and Linux (Ubuntu, Debian, Fedora, Arch) using Python 3.12+.
 
 ### 🍏 Running on macOS:
-1. **Open Terminal** and navigate to the project directory:
+1. **Prerequisites (Homebrew):**
+   Ensure Python 3.12+ is installed on your Mac:
+   ```bash
+   brew install python
+   ```
+2. **Open Terminal** and navigate to the project directory:
    ```bash
    cd cucumber
    ```
-2. **Create and Activate Virtual Environment:**
+3. **Create and Activate Virtual Environment:**
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    ```
-3. **Install Dependencies & Playwright Engine:**
+4. **Install Dependencies & Playwright Engine:**
    ```bash
    pip install -r requirements.txt
    python3 -m playwright install chromium
    ```
-4. **Launch AutoCuke Desktop GUI:**
+5. **Launch AutoCuke Desktop GUI:**
    ```bash
    PYTHONPATH=. python3 app/main.py
    ```
 
 ---
 
-### 🐧 Running on Linux (Ubuntu / Debian / Fedora):
-1. **Install Prerequisites (Qt & XCB libraries):**
-   ```bash
-   sudo apt update && sudo apt install -y python3-pip python3-venv libxcb-cursor0 libgl1
-   ```
+### 🐧 Running on Linux (Ubuntu / Debian / Fedora / Arch):
+1. **Install Prerequisites (Qt & XCB display libraries):**
+   - **Ubuntu 22.04 / 24.04 / Debian:**
+     ```bash
+     sudo apt update && sudo apt install -y python3-pip python3-venv libxcb-cursor0 libgl1 libegl1 libxkbcommon-x11-0 libdbus-1-3 libxcb-xinerama0
+     ```
+   - **Fedora:**
+     ```bash
+     sudo dnf install -y python3-pip xcb-util-cursor mesa-libGL mesa-libEGL libxkbcommon-x11
+     ```
+   - **Arch Linux:**
+     ```bash
+     sudo pacman -S python-pip xcb-util-cursor mesa libxkbcommon-x11
+     ```
 2. **Create Virtual Environment & Install Requirements:**
    ```bash
    python3 -m venv .venv
@@ -153,6 +167,7 @@ AutoCuke runs natively on macOS (Apple Silicon M1/M2/M3/M4 & Intel) and Linux (U
    ```bash
    PYTHONPATH=. python3 app/main.py
    ```
+   *(Note: On headless Linux servers or Docker containers without an active display server, run using `xvfb-run python3 app/main.py`)*
 
 ### How to Import Scenarios:
 1. **Login**: Type your Email and Password, then click **Test Connection**. This fetches your active project list.
@@ -226,7 +241,7 @@ $env:PYTHONPATH="."; python tests/test_integration.py
 
 ## Building a Standalone Executable (.exe)
 
-You can compile the application into a single executable using **PyInstaller**.
+You can compile the application into a standalone Windows bundle using **PyInstaller** and the included production specification file (`AutoCuke.spec`).
 
 ### Step 1: Install PyInstaller
 Ensure PyInstaller is installed inside your virtual environment:
@@ -234,16 +249,16 @@ Ensure PyInstaller is installed inside your virtual environment:
 pip install pyinstaller
 ```
 
-### Step 2: Generate Executable
-Run the PyInstaller command with the `--collect-all` flag to bundle Playwright assets alongside PySide6 libraries:
+### Step 2: Build Executable Bundle
+Execute the build using `AutoCuke.spec` to automatically bundle assets (logo, checkmark, favicon) and Qt dependencies:
 ```powershell
-pyinstaller --name "CucumberStudioImporter" --windowed --noconsole --clean --collect-all playwright app/main.py
+pyinstaller AutoCuke.spec --clean --noconfirm
 ```
 
 ### Step 3: Launch Executable
-Upon compilation, the final build artifacts will reside in the `dist/` directory. Navigate there and open the executable:
+Upon compilation, the final build artifacts will reside in the `dist/AutoCuke` directory. Navigate there and open the executable:
 ```powershell
-.\dist\CucumberStudioImporter\CucumberStudioImporter.exe
+.\dist\AutoCuke\AutoCuke.exe
 ```
 *(The executable will automatically look for its configuration folders relative to the location where it is executed).*
 

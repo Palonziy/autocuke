@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from playwright.async_api import Page, expect
 from app.pages.base_page import BasePage
@@ -42,26 +43,51 @@ class LoginPage(BasePage):
             await self.type_human(self.password_input, password, "Password Field")
             
             # Click sign in
+            logger.info("Submitting login form...")
             await self.click(self.submit_button, "Sign In Button")
             
-            # Wait for navigation to projects or error message
-            logger.info("Waiting for login response...")
-            await self.page.wait_for_load_state("domcontentloaded")
+            # Error element selectors (CucumberStudio uses .ht-alert / .ht-alert--error)
+            error_locator = self.page.locator(
+                ".ht-alert, .ht-alert--error, .alert, .alert-danger, .error-message, [role='alert']"
+            )
             
-            # Check if login was successful
+            # Wait for either URL transition to /projects or an error banner to appear
+            logger.info("Waiting for login verification response...")
+            max_wait_seconds = 15
+            poll_interval = 0.5
+            loops = int(max_wait_seconds / poll_interval)
+            
+            for _ in range(loops):
+                await asyncio.sleep(poll_interval)
+                current_url = self.page.url
+                
+                # Check for successful redirection to /projects
+                if "/projects" in current_url and "/users/sign_in" not in current_url:
+                    logger.info("Login successful! Redirected to projects dashboard.")
+                    return True
+                
+                # Check if server rendered an error banner
+                if await error_locator.count() > 0 and await error_locator.first.is_visible():
+                    error_text = await error_locator.first.inner_text()
+                    clean_msg = " ".join(error_text.split())
+                    logger.error(f"Login failed: {clean_msg}")
+                    await self.capture_screenshot("login_failed_banner")
+                    return False
+            
+            # Final check after polling timeout
             current_url = self.page.url
             if "/projects" in current_url and "/users/sign_in" not in current_url:
                 logger.info("Login successful!")
                 return True
-                
-            # Check if there is an alert error message
-            error_locator = self.page.locator(".alert, .alert-danger, .error-message, [role='alert']")
-            if await error_locator.count() > 0:
+            
+            if await error_locator.count() > 0 and await error_locator.first.is_visible():
                 error_text = await error_locator.first.inner_text()
-                logger.error(f"Login failed: {error_text.strip()}")
+                clean_msg = " ".join(error_text.split())
+                logger.error(f"Login failed: {clean_msg}")
             else:
-                logger.error("Login failed (unknown error, still on sign-in page).")
-                
+                logger.error("Login timed out or remained on sign-in page without reaching dashboard.")
+            
+            await self.capture_screenshot("login_timeout")
             return False
         except Exception as e:
             logger.error(f"Exception during login: {e}")
